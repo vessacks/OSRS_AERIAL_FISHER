@@ -34,21 +34,37 @@ KNIFE_THRESHOLD = .7
 INV_FISH_THRESHOLD = .7
 INV_TENCH_THRESHOLD = .93
 
+
+def speed():
+    speed = np.random.normal(.7,.3)
+    while speed > .85 or speed < .6:
+        speed = np.random.normal(.75,.08)
+    return speed
+
+def tick_dropper(odds=200):
+    if np.random.randint(0,odds) == 1:
+        print('tick dropper!')
+        time.sleep(.6)
+    return
+
+def wait():
+    wait = (.1 + abs(np.random.normal(0,.05)))
+    return wait
+
+
 def fishloop():
     loop_time = time.time()       
     while True:
         screenshot = wincap.get_screenshot()
         screenshot = cv.cvtColor(screenshot, cv.COLOR_BGR2GRAY)
         green_fish_allPoints, green_fish_bestPoint, green_fish_confidence = green_fish_vision.find(screenshot, threshold = GREEN_FISH_THRESHOLD, debug_mode= 'rectangles', return_mode= 'allPoints + bestPoint + confidence')
-        if cv.waitKey(1) == ord('q'):
-            cv.destroyAllWindows()
-            exit()
+        
 
         green_fish_screenPoint = wincap.get_screen_position(green_fish_bestPoint)
-        green_fish_action.click(green_fish_screenPoint)
+        green_fish_action.click(green_fish_screenPoint, speed = speed(), wait=wait(), tick_dropper_odds= 300)
         
         if green_fish_confidence > .85: #ie if is really found a green fish, wait only one tick
-            time.sleep(abs(np.random.normal(.6,.07)))
+            time.sleep(abs(np.random.normal(.5,.05)))
             
         else: #if if found a blue fish, wait 2 ticks
             time.sleep(abs(np.random.normal(1.2,.3)))
@@ -60,26 +76,28 @@ def fishloop():
 
         screenshot = wincap.get_screenshot()
         screenshot = cv.cvtColor(screenshot, cv.COLOR_BGR2GRAY)
+        
+        inv_fish_allPoints, inv_fish_bestPoint, inv_fish_confidence = inv_fish_vision.find(screenshot, threshold = INV_FISH_THRESHOLD, debug_mode= 'rectangles', return_mode= 'allPoints + bestPoint + confidence')
+        
+        # press 'q' with the output window focused to exit.
+        # waits 1 ms every loop to process key presses
         if cv.waitKey(1) == ord('q'):
             cv.destroyAllWindows()
             exit()
-        inv_fish_allPoints, inv_fish_bestPoint, inv_fish_confidence = inv_fish_vision.find(screenshot, threshold = INV_FISH_THRESHOLD, debug_mode= 'rectangles', return_mode= 'allPoints + bestPoint + confidence')
-        if len(inv_fish_allPoints) > 20:
-            print('I see 21 fish, exiting fishloop')
-            break
 
+
+        #this is a time waste, cutting it. 
+        '''
         screenshot = wincap.get_screenshot()
         screenshot = cv.cvtColor(screenshot, cv.COLOR_BGR2GRAY)
-        if cv.waitKey(1) == ord('q'):
-            cv.destroyAllWindows()
-            exit()
-        inv_tench_allPoints, inv_tench_bestPoint, inv_tench_confidence = inv_tench_vision.find(screenshot, threshold = INV_FISH_THRESHOLD, debug_mode= 'rectangles', return_mode= 'allPoints + bestPoint + confidence')
-        
-        if len(inv_fish_allPoints + inv_tench_allPoints) > 20:
-            print('I see 21 fish, exiting fishloop')
+        inv_tench_allPoints, inv_tench_bestPoint, inv_tench_confidence = inv_tench_vision.find(screenshot, threshold = INV_TENCH_THRESHOLD, debug_mode= 'rectangles', return_mode= 'allPoints + bestPoint + confidence')
+        '''
+
+        if len(inv_fish_allPoints) > 10:
+            print('at least 10 fish (I only see bluefish), exiting fishloop')
             break
 
-        print('FPS = %s | num_green_fish = %s / maxVal = %s | num_inv_fish = %s / maxVal = %s | num_inv_tench %s / maxVal %s' %(round(1/(time.time() - loop_time),2),len(green_fish_allPoints), round(green_fish_confidence,2), len(inv_fish_allPoints), round(inv_fish_confidence,2), len(inv_tench_allPoints), round(inv_tench_confidence,2)))
+        print('FPS = %s | num_green_fish = %s / maxVal = %s | num_inv_fish = %s / maxVal = %s | ' %(round(1/(time.time() - loop_time),2),len(green_fish_allPoints), round(green_fish_confidence,2), len(inv_fish_allPoints), round(inv_fish_confidence,2)))
         loop_time = time.time()
         # press 'q' with the output window focused to exit.
         # waits 1 ms every loop to process key presses
@@ -107,17 +125,18 @@ def cut():
         cv.destroyAllWindows()
         exit()        
     
-    knife_click = knife_action.click(knife_screenpoint)
+    knife_click = knife_action.click(knife_screenpoint, speed = speed(), wait=wait(), tick_dropper_odds= 100)
     time.sleep(abs(np.random.normal(.1,.02)))
     fish_screenpoint = wincap.get_screen_position(inv_fish_bestPoint)
-    fish_click = inv_fish_action.click(fish_screenpoint)
-    time.sleep(np.random.normal(21,.8))
+    fish_click = inv_fish_action.click(fish_screenpoint, speed = speed()-.15, wait=wait(), tick_dropper_odds= 100)
+    time.sleep(13.2 + np.random.normal(0,.8))
 
     #this is if you want to click FAST
     '''
     for fish in inv_fish_allPoints:
         time.sleep(abs(np.random.normal(.1,.02)))
         knife_click = knife_action.click(knife_screenpoint)
+
         time.sleep(abs(np.random.normal(.1,.02)))
         fish_screenpoint = wincap.get_screen_position(fish)
         fish_click = inv_fish_action.click(fish_screenpoint)
@@ -142,3 +161,5 @@ while True:
         print('finished after running for %s seconds' % runTime)
         exit()
     print('runtime = %s | seconds remaining = %s' %(runTime, (quit_after - runTime)))
+    
+
